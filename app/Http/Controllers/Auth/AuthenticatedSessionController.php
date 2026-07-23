@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use App\Models\ChatRoom;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -28,7 +29,30 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $user = Auth::user();
+        $this->ensureUserInGeneralRoom($user);
+
+        return redirect()->intended(route('chat.index'));
+    }
+
+    public function ensureUserInGeneralRoom($user)
+    {
+        $generalRoom = ChatRoom::firstOrCreate([
+            'type' => 'general'
+        ], [
+            'name' => 'General Chat',
+            'created_by' => 1,
+            'last_message_at' => now()
+        ]);
+
+        if (!$generalRoom->users()->where('user_id', $user->id)->exists()) {
+            $generalRoom->users()->attach($user->id, [
+                'joined_at' => now(),
+                'is_active' => true,
+                'last_read_at' => now()
+            ]);
+        }
+
     }
 
     /**
@@ -36,6 +60,12 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+
+        if ($user) {
+            $user->setOffline();
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
