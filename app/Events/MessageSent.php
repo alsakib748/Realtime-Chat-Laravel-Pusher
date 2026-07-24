@@ -2,7 +2,6 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -27,7 +26,7 @@ class MessageSent implements ShouldBroadcast
     /**
      * Get the channels the event should broadcast on.
      *
-     * @return array<int, Channel>
+     * @return array<int, PresenceChannel>
      */
     public function broadcastOn(): array
     {
@@ -35,6 +34,7 @@ class MessageSent implements ShouldBroadcast
             new PresenceChannel('chat-room.' . $this->message->chat_room_id),
         ];
     }
+
 
     public function boradcastWith(): array
     {
