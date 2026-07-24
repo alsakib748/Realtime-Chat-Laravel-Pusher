@@ -6,6 +6,9 @@ import Alpine from "alpinejs";
 window.axios = axios;
 window.axios.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
 window.Pusher = Pusher;
+window.axios = axios;
+window.axios.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
+window.Pusher = Pusher;
 
 window.Echo = new Echo({
     broadcaster: "pusher",
@@ -31,7 +34,7 @@ Alpine.data("chatApp", () => ({
     selectedFile: null,
     filePreview: null,
     showFileModal: false,
-    uploadProgess: 0,
+    uploadProgress: 0,
     isUploading: false,
 
     get messages() {
@@ -91,12 +94,11 @@ Alpine.data("chatApp", () => ({
         const userElement = document.querySelector(
             `[data-user-id="${user.id}"]`,
         );
-
         if (userElement) {
             const statusDot = userElement.querySelector(".status-dot");
             if (statusDot) {
                 statusDot.className = user.is_online
-                    ? "status-dot absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded full border-2 border-white"
+                    ? "status-dot absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"
                     : "status-dot absolute -bottom-1 -right-1 w-3 h-3 bg-gray-400 rounded-full border-2 border-white";
             }
         }
@@ -437,7 +439,6 @@ Alpine.data("chatApp", () => ({
 }));
 
 window.Alpine = Alpine;
-
 Alpine.start();
 
 /**

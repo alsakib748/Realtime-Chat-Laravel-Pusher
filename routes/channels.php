@@ -8,7 +8,6 @@ Broadcast::channel('users-status', function ($user) {
 });
 
 Broadcast::channel('chat-room.{chatRoomId}', function ($user, $chatRoomId) {
-
     $chatRoom = ChatRoom::find($chatRoomId);
 
     if (!$chatRoom) {
@@ -28,5 +27,4 @@ Broadcast::channel('chat-room.{chatRoomId}', function ($user, $chatRoomId) {
     }
 
     return false;
-
 });

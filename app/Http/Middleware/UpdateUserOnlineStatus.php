@@ -20,7 +20,7 @@ class UpdateUserOnlineStatus
 
         if (Auth::check()) {
             $user = Auth::user();
-            $wasOffline = $user->isOnline();
+            $wasOffline = !$user->isOnline();
 
             $user->setOnline();
 
@@ -32,4 +32,3 @@ class UpdateUserOnlineStatus
         return $next($request);
     }
 }
-

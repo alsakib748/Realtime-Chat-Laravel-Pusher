@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use App\Models\User;
 use App\Models\ChatRoom;
-use Intervention\Image\Image;
-use Storage;
+use Intervention\Image\Laravel\Facades\Image;
+use Illuminate\Support\Facades\Storage;
 
 class ChatController extends Controller
 {
@@ -45,7 +45,7 @@ class ChatController extends Controller
         }
 
         $messages = $chatRoom->messages()
-            ->with(['user', 'attachements'])
+            ->with(['user', 'attachments'])
             ->orderBy('created_at')
             ->take(50)
             ->get();
@@ -66,7 +66,7 @@ class ChatController extends Controller
                     'content' => $message->getDisplayContent(),
                     'type' => $message->type,
                     'metadata' => $message->metadata,
-                    'created_at' => $message->create_at->format('Y-m-d H:i:s'),
+                    'created_at' => $message->created_at->format('Y-m-d H:i:s'),
                     'user' => [
                         'id' => $message->user->id,
                         'name' => $message->user->name,
@@ -86,13 +86,12 @@ class ChatController extends Controller
                 ];
             })
         ]);
-
     }
 
     public function sendMessage(Request $request, ChatRoom $chatRoom)
     {
         $request->validate([
-            'content' => 'required_without:attachmen|string|max:1000',
+            'content' => 'required_without:attachment|string|max:1000',
             'attachment' => 'nullable|file|max:10240', // 10MB max
         ]);
 
@@ -106,27 +105,31 @@ class ChatController extends Controller
         $content = $request->content;
         $metadata = null;
 
+        // Handle file attachment
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
             $messageType = $this->getFileMessageType($file);
 
+            // Generate unique filename
             $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
             $path = "chat-attachments/{$chatRoom->id}/" . $filename;
 
+            // Store file
             Storage::disk('public')->put($path, $file->getContent());
 
+            // Create thumbnail for images
             if ($messageType === 'image') {
                 $this->createImageThumbnail($file, $path);
             }
 
+            // Set metadata
             $metadata = [
                 'original_filename' => $file->getClientOriginalName(),
                 'file_size' => $file->getSize(),
                 'mime_type' => $file->getMimeType()
             ];
 
-            $content = $content ?: 'Shared a file: ' . $file->getClientOriginalName();
-
+            $content = $content ?: "Shared a file: " . $file->getClientOriginalName();
         }
 
         $message = $chatRoom->messages()->create([
@@ -136,6 +139,7 @@ class ChatController extends Controller
             'metadata' => $metadata
         ]);
 
+        // Create attachment record if file was uploaded
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
             MessageAttachment::create([
@@ -158,13 +162,13 @@ class ChatController extends Controller
             'message' => 'Message sent successfully',
             'message_id' => $message->id
         ]);
-
     }
 
     public function downloadAttachment(MessageAttachment $attachment)
     {
         $user = Auth::user();
 
+        // Check if user has access to the chat room
         if (!$attachment->message->chatRoom->users()->where('user_id', $user->id)->where('is_active', true)->exists()) {
             abort(403, 'You do not have access to this file');
         }
@@ -192,12 +196,15 @@ class ChatController extends Controller
         try {
             $thumbnailPath = str_replace('.', '_thumb.', $path);
 
+            // Intervention Image v3 syntax
             $image = Image::read($file->getPathname());
             $image->cover(300, 300);
 
+            // Save the thumbnail
             Storage::disk('public')->put($thumbnailPath, $image->encode());
 
         } catch (\Exception $e) {
+            // Thumbnail creation failed, but that's okay
             \Log::warning('Failed to create thumbnail: ' . $e->getMessage());
         }
     }
@@ -214,7 +221,6 @@ class ChatController extends Controller
 
         return response()->json(['status' => 'ok']);
     }
-
 
     public function createPrivateRoom(User $otherUser)
     {
@@ -269,6 +275,4 @@ class ChatController extends Controller
             ]
         ]);
     }
-
-
 }
